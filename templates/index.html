@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task Manager</title>
+</head>
+
+<body>
+
+    <h1>My Task Manager</h1>
+
+    <h2>Add a Task</h2>
+
+    <form id="taskForm">
+
+        <label for="title">Task Name:</label>
+        <input type="text" id="title" name="title">
+
+        <br><br>
+
+        <label for="description">Description:</label>
+        <textarea id="description" name="description"></textarea>
+
+        <br><br>
+
+        <label for="priority">Priority:</label>
+
+        <select id="priority" name="priority">
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+        </select>
+
+        <br><br>
+
+        <button type="submit">Add Task</button>
+
+    </form>
+  <h2>My Tasks</h2>
+
+<div>
+    <button id="allBtn">All</button>
+    <button id="pendingBtn">Pending</button>
+    <button id="completedBtn">Completed</button>
+</div>
+
+<br>
+
+<ul id="taskList"></ul>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
