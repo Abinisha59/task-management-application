@@ -1,54 +1,102 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Task Manager</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Task Manager</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
+    <main class="container">
+        <header class="page-header">
+            <p class="eyebrow">ORGANIZE YOUR DAY</p>
+            <h1>My Task Manager</h1>
+            <p class="subtitle">Keep track of your tasks and stay productive.</p>
+        </header>
 
-    <h1>My Task Manager</h1>
+        <section class="task-form-section">
+            <h2>Add a Task</h2>
 
-    <h2>Add a Task</h2>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label for="title">Task Name</label>
+                    <input type="text" id="title" name="title"
+                           placeholder="Enter task name"
+                           maxlength="100" required>
+                </div>
 
-    <form id="taskForm">
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description"
+                              placeholder="Describe your task"
+                              rows="3"></textarea>
+                </div>
 
-        <label for="title">Task Name:</label>
-        <input type="text" id="title" name="title">
-
-        <br><br>
-
-        <label for="description">Description:</label>
-        <textarea id="description" name="description"></textarea>
-
-        <br><br>
-
-        <label for="priority">Priority:</label>
-
-        <select id="priority" name="priority">
-    <option value="" disabled selected>Select Priority</option>
-    <option value="Low">Low</option>
-    <option value="Medium">Medium</option>
-    <option value="High">High</option>
-</select>
-
-
-
-        <br><br>
-
-        <button type="submit">Add Task</button>
-
-    </form>
-  <h2>My Tasks</h2>
-
-<div>
-    <button id="allBtn">All</button>
-    <button id="pendingBtn">Pending</button>
-    <button id="completedBtn">Completed</button>
+                <div class="form-group">
+    <label for="due_date">Due Date</label>
+    <input type="date" id="due_date" name="due_date">
 </div>
 
-<br>
+                <div class="form-group">
+                    <label for="priority">Priority</label>
+                    <select id="priority" name="priority" required>
+                        <option value="" disabled selected>Select Priority</option>
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
 
-<ul id="taskList"></ul>
-<script src="{{ url_for('static', filename='script.js') }}"></script>
+                <button type="submit" class="primary-btn">Add Task</button>
+            </form>
+        </section>
+
+        <section class="stats-grid">
+            <div class="stat-card">
+                <p>Total Tasks</p>
+                <h3 id="totalTasks">0</h3>
+            </div>
+
+            <div class="stat-card">
+                <p>Pending</p>
+                <h3 id="pendingTasks">0</h3>
+            </div>
+
+            <div class="stat-card">
+                <p>Completed</p>
+                <h3 id="completedTasks">0</h3>
+            </div>
+        </section>
+
+        <section class="tasks-section">
+            <div class="section-heading">
+                <h2>My Tasks</h2>
+            </div>
+
+            <div class="task-toolbar">
+                <div class="filter-buttons">
+                    <button type="button" id="allBtn"
+                            class="filter-btn active">All</button>
+                    <button type="button" id="pendingBtn"
+                            class="filter-btn">Pending</button>
+                    <button type="button" id="completedBtn"
+                            class="filter-btn">Completed</button>
+                </div>
+
+                <input type="search" id="searchInput"
+                       class="search-input"
+                       placeholder="Search tasks..."
+                       aria-label="Search tasks">
+            </div>
+
+            <ul id="taskList" class="task-list"></ul>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

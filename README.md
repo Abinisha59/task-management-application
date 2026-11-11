@@ -4,51 +4,50 @@ A simple Task Management Application built using HTML, JavaScript, Python Flask,
 
 ## Features
 
-* Add a new task
-* Add task description
-* Select task priority: Low, Medium, or High
-* View all tasks
-* Mark tasks as completed
-* Delete tasks
-* Filter tasks by All, Pending, and Completed
-* Validate task input
-* Handle API and database errors
-* Automatically create the required database table
-* Store tasks in MySQL
+- Add new tasks with descriptions
+- Select task priority: Low, Medium, or High
+- View all tasks
+- Mark tasks as completed
+- Delete tasks
+- Filter tasks by All, Pending, and Completed
+- Validate task inputs
+- Handle API and database errors
+- Automatically create the required database table
+- Store tasks in MySQL
 
 ## Technologies Used
 
-* HTML5
-* JavaScript
-* Python
-* Flask
-* MySQL
-* Git
-* GitHub
+- HTML5
+- CSS3
+- JavaScript
+- Python
+- Flask
+- MySQL
+- Git and GitHub
 
 ## REST API Endpoints
 
-| Method | Endpoint          | Description              |
-| ------ | ----------------- | ------------------------ |
-| GET    | `/api/tasks`      | Get all tasks            |
-| POST   | `/api/tasks`      | Add a new task           |
-| PUT    | `/api/tasks/<id>` | Mark a task as completed |
-| DELETE | `/api/tasks/<id>` | Delete a task            |
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/tasks` | Get all tasks |
+| POST | `/api/tasks` | Add a new task |
+| PUT | `/api/tasks/<id>` | Update a task |
+| DELETE | `/api/tasks/<id>` | Delete a task |
 
 ## Database
 
 The application uses a MySQL database named `task_manager`.
 
-The `tasks` table contains the following fields:
+The `tasks` table contains:
 
-* `id`
-* `title`
-* `description`
-* `priority`
-* `status`
-* `created_at`
+- id
+- title
+- description
+- priority
+- status
+- created_at
 
-The application automatically creates the `tasks` table when it starts if the table does not already exist.
+The application automatically creates the `tasks` table when it starts if it does not already exist.
 
 ## Project Structure
 
@@ -62,20 +61,21 @@ task-management-application/
 ├── README.md
 │
 ├── static/
-│   └── script.js
+│   ├── script.js
+│   └── style.css
 │
 └── templates/
     └── index.html
 ```
 
-> **Note:** The `.env` file contains local database credentials and is excluded from Git using `.gitignore`. It should not be uploaded to GitHub.
+**Note:** The `.env` file contains local database credentials and is excluded from Git using `.gitignore`. It should not be uploaded to GitHub.
 
 ## How to Run
 
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-github-repository-url>
+git clone https://github.com/Abinisha59/task-management-application.git
 cd task-management-application
 ```
 
@@ -101,17 +101,17 @@ CREATE DATABASE task_manager;
 
 The application will automatically create the `tasks` table when it starts.
 
-### 5. Create the `.env` File
+### 5. Configure Environment Variables
 
 Create a `.env` file in the project root directory.
 
-Add:
+Add your MySQL password:
 
 ```text
 MYSQL_PASSWORD=your_mysql_password
 ```
 
-Replace `your_mysql_password` with your local MySQL password.
+Replace the placeholder with your actual MySQL password.
 
 **Do not upload the `.env` file to GitHub.**
 
@@ -123,41 +123,26 @@ On Windows:
 .\venv\Scripts\python.exe app.py
 ```
 
-You should see:
-
-```text
-Database initialized successfully
-```
-
 ### 7. Open the Application
 
-Open the following URL in your browser:
+Open your browser and visit:
 
-```text
 http://127.0.0.1:5000
-```
 
 ## Validation and Error Handling
 
-The application validates task creation requests.
+The application validates task creation requests:
 
-The following validations are included:
+- Task title cannot be empty.
+- Task description cannot be empty.
+- Priority cannot be empty.
+- Priority must be Low, Medium, or High.
 
-* Task title cannot be empty
-* Task description cannot be empty
-* Priority cannot be empty
-* Priority must be `Low`, `Medium`, or `High`
-
-The application also handles:
-
-* Database errors
-* Invalid API requests
-* Tasks that do not exist
-* Unexpected application errors
+The application also handles database errors, invalid API requests, tasks that do not exist, and unexpected application errors.
 
 ## Git and GitHub
 
-Git is used for version control and GitHub is used to host the source code.
+Git is used for version control, and GitHub hosts the source code.
 
 Example commands:
 
@@ -167,9 +152,7 @@ git commit -m "Update task management application"
 git push
 ```
 
-The project uses a `.gitignore` file to prevent unnecessary and sensitive files from being committed.
-
-Ignored files include:
+The `.gitignore` file excludes unnecessary and sensitive files:
 
 ```text
 venv/
@@ -182,4 +165,4 @@ __pycache__/
 
 ## Author
 
-**Abinisha G**
+Abinisha G

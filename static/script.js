@@ -1,26 +1,78 @@
 
 const form = document.querySelector("#taskForm");
 const taskList = document.querySelector("#taskList");
+const searchInput = document.querySelector("#searchInput");
+const titleInput = document.querySelector("#title");
+const descriptionInput = document.querySelector("#description");
+const priorityInput = document.querySelector("#priority");
+const dueDateInput = document.querySelector("#due_date");
 
+const allBtn = document.querySelector("#allBtn");
+const pendingBtn = document.querySelector("#pendingBtn");
+const completedBtn = document.querySelector("#completedBtn");
 
-// ===============================
-// ADD TASK
-// ===============================
+const totalTasksElement = document.querySelector("#totalTasks");
+const pendingTasksElement = document.querySelector("#pendingTasks");
+const completedTasksElement = document.querySelector("#completedTasks");
 
-form.addEventListener("submit", async function(event) {
+const filterButtons = [allBtn, pendingBtn, completedBtn];
+
+let allTasks = [];
+let currentFilter = "all";
+
+// Read JSON safely and handle non-JSON server responses.
+async function readResponse(response) {
+    const text = await response.text();
+
+    if (!text) {
+        return {};
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch {
+        return { error: "The server returned an unexpected response." };
+    }
+}
+
+// Display an error without exposing internal server details.
+function showError(message) {
+    alert(message || "Something went wrong. Please try again.");
+}
+
+// ---------- ADD TASK ----------
+form.addEventListener("submit", async function (event) {
     event.preventDefault();
 
-    const title = document.querySelector("#title").value;
-    const description = document.querySelector("#description").value;
-    const priority = document.querySelector("#priority").value;
+    const title = titleInput.value.trim();
+    const description = descriptionInput.value.trim();
+    const priority = priorityInput.value;
+    const dueDate = dueDateInput.value;
+
+    if (!title) {
+        showError("Please enter a task title.");
+        titleInput.focus();
+        return;
+    }
+
+    if (!priority) {
+        showError("Please select a priority.");
+        priorityInput.focus();
+        return;
+    }
 
     const task = {
         title: title,
         description: description,
-        priority: priority
+        priority: priority,
+        due_date: dueDate || null
     };
 
+    const submitButton = form.querySelector('[type="submit"]');
+
     try {
+        submitButton.disabled = true;
+
         const response = await fetch("/api/tasks", {
             method: "POST",
             headers: {
@@ -29,244 +81,305 @@ form.addEventListener("submit", async function(event) {
             body: JSON.stringify(task)
         });
 
-        const result = await response.json();
+        const result = await readResponse(response);
 
-        // Handle API errors
         if (!response.ok) {
-            alert(result.error);
+            showError(result.error || "Unable to create task.");
             return;
         }
 
-        console.log("Task created:", result);
-
-        // Clear form
         form.reset();
-
-        // Reload tasks
-        loadTasks();
+        currentFilter = "all";
+        await loadTasks();
 
     } catch (error) {
         console.error("Error adding task:", error);
-        alert("Unable to connect to the server.");
+        showError("Unable to connect to the server.");
+    } finally {
+        submitButton.disabled = false;
     }
 });
 
-
-// ===============================
-// LOAD TASKS
-// ===============================
-
-async function loadTasks(filter = "all") {
-
+// ---------- LOAD TASKS ----------
+async function loadTasks() {
     try {
         const response = await fetch("/api/tasks");
+        const result = await readResponse(response);
 
-        const tasks = await response.json();
-
-        // Handle API errors
         if (!response.ok) {
-            alert(tasks.error);
+            showError(result.error || "Unable to load tasks.");
             return;
         }
 
-        // Clear current task list
-        taskList.innerHTML = "";
-
-        let filteredTasks = tasks;
-
-
-        // ===============================
-        // PENDING FILTER
-        // ===============================
-
-        if (filter === "pending") {
-
-            filteredTasks = tasks.filter(function(task) {
-                return task.status === "pending";
-            });
+        if (!Array.isArray(result)) {
+            showError("The server returned an invalid task list.");
+            return;
         }
 
-
-        // ===============================
-        // COMPLETED FILTER
-        // ===============================
-
-        if (filter === "completed") {
-
-            filteredTasks = tasks.filter(function(task) {
-                return task.status === "completed";
-            });
-        }
-
-
-        // ===============================
-        // DISPLAY TASKS
-        // ===============================
-
-        filteredTasks.forEach(function(task) {
-
-            const li = document.createElement("li");
-
-            li.textContent =
-                task.title +
-                " | " +
-                task.description +
-                " | Priority: " +
-                task.priority +
-                " | Status: " +
-                task.status;
-
-
-            // ===============================
-            // COMPLETE BUTTON
-            // ===============================
-
-            if (task.status === "pending") {
-
-                const completeButton = document.createElement("button");
-
-                completeButton.textContent = "Complete";
-
-                completeButton.addEventListener("click", function() {
-                    completeTask(task.id);
-                });
-
-                li.appendChild(completeButton);
-            }
-
-
-            // ===============================
-            // DELETE BUTTON
-            // ===============================
-
-            const deleteButton = document.createElement("button");
-
-            deleteButton.textContent = "Delete";
-
-            deleteButton.addEventListener("click", function() {
-                deleteTask(task.id);
-            });
-
-            li.appendChild(deleteButton);
-
-
-            // Add task to page
-            taskList.appendChild(li);
-        });
+        allTasks = result;
+        updateStatistics();
+        renderTasks();
 
     } catch (error) {
-
         console.error("Error loading tasks:", error);
-
-        alert("Unable to connect to the server.");
+        showError("Unable to load tasks. Check the server connection.");
     }
 }
 
+// ---------- UPDATE STATISTICS ----------
+function updateStatistics() {
+    const total = allTasks.length;
+    const completed = allTasks.filter(
+        task => task.status === "completed"
+    ).length;
+    const pending = allTasks.filter(
+        task => task.status === "pending"
+    ).length;
 
-// ===============================
-// COMPLETE TASK
-// ===============================
+    totalTasksElement.textContent = total;
+    pendingTasksElement.textContent = pending;
+    completedTasksElement.textContent = completed;
+}
 
-async function completeTask(id) {
+// ---------- DUE DATE INFORMATION ----------
+function getDueDateInfo(task) {
+    if (!task.due_date) {
+        return null;
+    }
 
+    // Parse YYYY-MM-DD as a local calendar date to avoid
+    // timezone-related date shifts.
+    const parts = task.due_date.split("-").map(Number);
+
+    if (
+        parts.length !== 3 ||
+        parts.some(number => !Number.isInteger(number)) ||
+        parts[0] < 1 ||
+        parts[1] < 1 || parts[1] > 12 ||
+        parts[2] < 1 || parts[2] > 31
+    ) {
+        return { text: "Invalid due date", className: "due-upcoming" };
+    }
+
+    const dueDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
+    if (
+        dueDate.getFullYear() !== parts[0] ||
+        dueDate.getMonth() !== parts[1] - 1 ||
+        dueDate.getDate() !== parts[2]
+    ) {
+        return { text: "Invalid due date", className: "due-upcoming" };
+    }
+
+    const today = new Date();
+    const localToday = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate()
+    );
+
+    if (task.status === "completed") {
+        return {
+            text: "Completed",
+            className: "due-completed"
+        };
+    }
+
+    if (dueDate < localToday) {
+        return {
+            text: "Overdue",
+            className: "overdue"
+        };
+    }
+
+    if (dueDate.getTime() === localToday.getTime()) {
+        return {
+            text: "Due today",
+            className: "due-today"
+        };
+    }
+
+    return {
+        text: "Due " + dueDate.toLocaleDateString(),
+        className: "due-upcoming"
+    };
+}
+
+// ---------- RENDER TASKS ----------
+function renderTasks() {
+    const searchTerm = searchInput.value.trim().toLowerCase();
+
+    let filteredTasks = allTasks.filter(function (task) {
+        const matchesFilter =
+            currentFilter === "all" ||
+            task.status === currentFilter;
+
+        const matchesSearch =
+            (task.title || "").toLowerCase().includes(searchTerm) ||
+            (task.description || "").toLowerCase().includes(searchTerm);
+
+        return matchesFilter && matchesSearch;
+    });
+
+    filterButtons.forEach(function (button) {
+        button.classList.toggle(
+            "active",
+            button.id === currentFilter + "Btn"
+        );
+    });
+
+    taskList.replaceChildren();
+
+    if (filteredTasks.length === 0) {
+        const emptyMessage = document.createElement("li");
+        emptyMessage.className = "empty-state";
+        emptyMessage.textContent = searchTerm
+            ? "No tasks match your search."
+            : "No tasks here yet. Add a task to get started.";
+
+        taskList.appendChild(emptyMessage);
+        return;
+    }
+
+    filteredTasks.forEach(function (task) {
+        const li = document.createElement("li");
+
+        const heading = document.createElement("h3");
+        heading.textContent = task.title;
+        li.appendChild(heading);
+
+        const description = document.createElement("p");
+        description.textContent =
+            task.description || "No description provided.";
+        li.appendChild(description);
+
+        const taskMeta = document.createElement("div");
+        taskMeta.className = "task-meta";
+
+        addBadge(taskMeta, "Priority: " + task.priority,
+            (task.priority || "").toLowerCase());
+
+        addBadge(
+            taskMeta,
+            task.status === "completed" ? "Completed" : "Pending",
+            task.status === "completed" ? "due-completed" : "due-upcoming"
+        );
+
+        const dueInfo = getDueDateInfo(task);
+
+        if (dueInfo) {
+            addBadge(taskMeta, dueInfo.text, dueInfo.className);
+        }
+
+        li.appendChild(taskMeta);
+
+        if (task.status === "pending") {
+            const completeButton = document.createElement("button");
+            completeButton.type = "button";
+            completeButton.textContent = "Mark Complete";
+
+            completeButton.addEventListener("click", function () {
+                completeTask(task.id, completeButton);
+            });
+
+            li.appendChild(completeButton);
+        }
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.textContent = "Delete";
+
+        deleteButton.addEventListener("click", function () {
+            deleteTask(task.id, deleteButton);
+        });
+
+        li.appendChild(deleteButton);
+        taskList.appendChild(li);
+    });
+}
+
+// Create badges safely using textContent.
+function addBadge(container, text, className) {
+    const badge = document.createElement("span");
+    badge.className = "task-badge " + className;
+    badge.textContent = text;
+    container.appendChild(badge);
+}
+
+// ---------- COMPLETE TASK ----------
+async function completeTask(id, button) {
     try {
+        button.disabled = true;
 
         const response = await fetch(`/api/tasks/${id}`, {
             method: "PUT"
         });
 
-        const result = await response.json();
+        const result = await readResponse(response);
 
-        // Handle API errors
         if (!response.ok) {
-            alert(result.error);
+            showError(result.error || "Unable to complete task.");
             return;
         }
 
-        console.log("Task updated:", result);
-
-        // Reload tasks
-        loadTasks();
+        await loadTasks();
 
     } catch (error) {
-
         console.error("Error completing task:", error);
-
-        alert("Unable to connect to the server.");
+        showError("Unable to connect to the server.");
+    } finally {
+        button.disabled = false;
     }
 }
 
-
-// ===============================
-// DELETE TASK
-// ===============================
-
-async function deleteTask(id) {
+// ---------- DELETE TASK ----------
+async function deleteTask(id, button) {
+    if (!confirm("Are you sure you want to delete this task?")) {
+        return;
+    }
 
     try {
+        button.disabled = true;
 
         const response = await fetch(`/api/tasks/${id}`, {
             method: "DELETE"
         });
 
-        const result = await response.json();
+        const result = await readResponse(response);
 
-        // Handle API errors
         if (!response.ok) {
-            alert(result.error);
+            showError(result.error || "Unable to delete task.");
             return;
         }
 
-        console.log("Task deleted:", result);
-
-        // Reload tasks
-        loadTasks();
+        await loadTasks();
 
     } catch (error) {
-
         console.error("Error deleting task:", error);
-
-        alert("Unable to connect to the server.");
+        showError("Unable to connect to the server.");
+    } finally {
+        button.disabled = false;
     }
 }
 
-
-// ===============================
-// ALL TASKS BUTTON
-// ===============================
-
-document.querySelector("#allBtn").addEventListener("click", function() {
-
-    loadTasks("all");
-
+// ---------- FILTER BUTTONS ----------
+allBtn.addEventListener("click", function () {
+    currentFilter = "all";
+    renderTasks();
 });
 
-
-// ===============================
-// PENDING TASKS BUTTON
-// ===============================
-
-document.querySelector("#pendingBtn").addEventListener("click", function() {
-
-    loadTasks("pending");
-
+pendingBtn.addEventListener("click", function () {
+    currentFilter = "pending";
+    renderTasks();
 });
 
-
-// ===============================
-// COMPLETED TASKS BUTTON
-// ===============================
-
-document.querySelector("#completedBtn").addEventListener("click", function() {
-
-    loadTasks("completed");
-
+completedBtn.addEventListener("click", function () {
+    currentFilter = "completed";
+    renderTasks();
 });
 
+// ---------- SEARCH ----------
+searchInput.addEventListener("input", renderTasks);
 
-// ===============================
-// LOAD TASKS WHEN PAGE OPENS
-// ===============================
-
+// ---------- INITIAL LOAD ----------
 loadTasks();
-
